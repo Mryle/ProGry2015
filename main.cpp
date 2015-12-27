@@ -25,17 +25,108 @@ const char Door = '+';
 
 //const-correctness!
 
+class Effect {
+public:
+	Effect(int id, int accuracy, int damage);
+
+	int Damage() const;
+	int Accuracy() const;
+private:
+	Effect() = default;
+
+	int damage_;
+	int accuracy_;
+	int sourceId_;
+};
+
+Effect::Effect(int id, int accuracy, int damage)
+	: damage_(damage), accuracy_(accuracy), sourceId_(id)
+{
+}
+
+int Effect::Damage() const
+{
+	return damage_;
+}
+
+int Effect::Accuracy() const
+{
+	return accuracy_;
+}
+
+class CreatureStats { 
+public:
+	CreatureStats() = default;
+	CreatureStats(int nid);
+
+	int id() const;
+	int hitPoints() const;
+	virtual void applyEffect(Effect eff);
+	virtual Effect Attack() const;
+
+	static const int noId = -1;
+private:
+	virtual int Defence() const;
+
+	const int id_ = -1;
+
+	int hitPoints_;
+};
+
+CreatureStats::CreatureStats(int nid)
+	: id_(nid)
+{
+}
+
+int CreatureStats::id() const
+{
+	return id_;
+}
+
+int CreatureStats::hitPoints() const
+{
+	return hitPoints_;
+}
+
+void CreatureStats::applyEffect(Effect eff)
+{
+	if (eff.Accuracy() >= Defence())
+		hitPoints_ -= eff.Damage();
+}
+
+Effect CreatureStats::Attack() const
+{
+	return Effect(id(), 0, 1);
+}
+
+int CreatureStats::Defence() const
+{
+	return 1;
+}
+
+
 class MapGenerator;
 
 class Creature {
 public:
+	Creature() = default;
+	Creature(int nid);
+
 	int pos() const;
-
 	void setPos(int position);
-
+	CreatureStats stats() const;
+	virtual void beAttacked(const Effect &attackEffect);
 private:
+	void attack(Creature &enemy);
+
 	int pos_;
+	CreatureStats stats_;
 };
+
+Creature::Creature(int nid)
+	: stats_(nid)
+{
+}
 
 int Creature::pos() const
 {
@@ -45,6 +136,21 @@ int Creature::pos() const
 void Creature::setPos(int position)
 {
 	pos_ = position;
+}
+
+CreatureStats Creature::stats() const
+{
+	return stats_;
+}
+
+void Creature::beAttacked(const Effect &attackEffect)
+{
+	stats_.applyEffect(attackEffect);
+}
+
+void Creature::attack(Creature &enemy)
+{
+	enemy.beAttacked(stats_.Attack());
 }
 
 class Player : public Creature {
